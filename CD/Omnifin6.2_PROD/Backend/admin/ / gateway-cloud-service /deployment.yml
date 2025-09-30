@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gateway-cloud-service
+  annotations:
+    argocd.argoproj.io/tracking-id: gateway-cloud-service:/Deployment:default/gateway-cloud-service
+
+  labels:
+    app: gateway-cloud-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gateway-cloud-service
+  template:
+    metadata:
+      labels:
+        app: gateway-cloud-service
+    spec:
+      containers:
+        - name: gateway-cloud-service
+          image: devsecops121/core-omnifin6.2_prod:gateway-cloud-service
+          ports:
+            - containerPort: 8080
+          env:
+            - name: JAVA_OPTS
+              value: "-Xms256m -Xmx512m"
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gateway-cloud-service
+  annotations:
+    argocd.argoproj.io/tracking-id: gateway-cloud-service:/Service:default/gateway-cloud-service
+
+  namespace: default
+  labels:
+    app: gateway-cloud-service
+spec:
+  type: NodePort
+  selector:
+    app: gateway-cloud-service
+  ports:
+    - port: 8080
+      targetPort: 8080
+      nodePort: 30105

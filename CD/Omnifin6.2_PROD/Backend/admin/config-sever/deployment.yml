@@ -1,1 +1,67 @@
 
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: config-server
+  labels:
+    app: config-server
+  annotations:
+    argocd.argoproj.io/tracking-id: config-server:/Deployment:default/config-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: config-server
+  template:
+    metadata:
+      labels:
+        app: config-server
+    spec:
+      containers:
+        - name: config-server
+          image: devsecops121/core-omnifin6.2_prod:config-server
+          ports:
+            - containerPort: 8762
+          env:
+            - name: JAVA_OPTS
+              value: "-Xms256m -Xmx512m"
+            - name: SPRING_PROFILES_ACTIVE
+              value: native
+            - name: SPRING_CONFIG_LOCATION
+              value: classpath:/,file:/config/
+            - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+              value: http://discovery-server:8761/eureka
+          volumeMounts:
+            - name: config-volume
+              mountPath: /config
+          resources:  # ✅ FIXED: resource section was wrongly placed under volumes
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+      volumes:
+        - name: config-volume
+          hostPath:
+            path: /home/a3sdsk091/app/app-config
+            type: Directory
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: config-server
+  namespace: default
+  labels:
+    app: config-server
+  annotations:
+    argocd.argoproj.io/tracking-id: config-server:/Service:default/config-server
+spec:
+  type: NodePort
+  selector:
+    app: config-server
+  ports:
+    - port: 8191
+      targetPort: 8191
+      nodePort: 30103
